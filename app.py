@@ -1,98 +1,116 @@
 import streamlit as st
+import pandas as pd
 from datetime import datetime, timedelta
+import time  # Import the time module
 
-# Function to calculate age in various time units
-def calculate_age(dob):
+# Function to calculate age and occurrences
+def calculate_age_and_occurrences(dob):
     now = datetime.now()
-    dob_datetime = datetime.combine(dob, datetime.min.time())
-    delta = now - dob_datetime
+    dob_datetime = datetime.combine(dob, datetime.min.time())  # Convert to datetime
 
-    years = delta.days // 365
-    delta -= timedelta(days=years * 365)
-    months = delta.days // 30
-    delta -= timedelta(days=months * 30)
-    weeks = delta.days // 7
-    delta -= timedelta(days=weeks * 7)
-    days = delta.days
-    hours, remainder = divmod(delta.seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
+    # Calculate years, months, weeks, and days
+    years = now.year - dob_datetime.year
+    months = now.month - dob_datetime.month
+    weeks = (now - dob_datetime).days // 7
+    days = (now - dob_datetime).days % 7
 
-    return years, months, weeks, days, hours, minutes, seconds
+    # Initialize a dictionary to count occurrences by day of the week
+    birthday_counts = {
+        "Monday": 0,
+        "Tuesday": 0,
+        "Wednesday": 0,
+        "Thursday": 0,
+        "Friday": 0,
+        "Saturday": 0,
+        "Sunday": 0
+    }
 
-# Function to list which weekday the birthday fell on each year
-def birthday_weekdays_by_year(dob):
-    now = datetime.now()
-    birthday_days = []
+    # Count occurrences of birthdays by day of the week
+    for year in range(dob_datetime.year, now.year + 1):
+        birthday = datetime(year, dob_datetime.month, dob_datetime.day)
+        day_name = birthday.strftime("%A")  # Get the day name
+        birthday_counts[day_name] += 1
 
-    for year in range(dob.year, now.year + 1):
-        this_year_birthday = datetime(year, dob.month, dob.day)
-        weekday_name = this_year_birthday.strftime('%A')  # Get weekday name
-        birthday_days.append((year, weekday_name))
+    # Calculate total hours, minutes, and seconds since birth
+    total_seconds_since_birth = (now - dob_datetime).total_seconds()
+    hours = int(total_seconds_since_birth // 3600)
+    minutes = int((total_seconds_since_birth % 3600) // 60)  # Calculate minutes
+    seconds = int(total_seconds_since_birth % 60)
 
-    return birthday_days
+    return years, months, weeks, days, hours, minutes, seconds, birthday_counts
 
 # Streamlit application
 st.set_page_config(page_title="Age Calculator", layout="wide")
 st.title("🎉 Age Calculator 🎉")
-st.markdown("## Find out how old you are in various time units!")
 
-# Current date for setting the range
-today = datetime.today()
+# User input for DOB using a calendar date input
+dob_input = st.date_input("Select your Date of Birth:", value=datetime.today(), min_value=datetime(1900, 1, 1))
 
-# Date input with extended range
-dob_input = st.date_input(
-    "Enter your Date of Birth:",
-    value=today,  # Default value as today
-    min_value=datetime(1900, 1, 1),  # Minimum date (adjust as needed)
-    max_value=today  # Maximum date is today
-)
+# Layout for the age calculation
+if st.button("Calculate Age"):
+    if dob_input:
+        # Calculate age and occurrences
+        years, months, weeks, days, hours, minutes, seconds, birthday_counts = calculate_age_and_occurrences(dob_input)
 
-# Layout with columns
-col1, col2 = st.columns([2, 1])
+        # Display age along with hours, minutes, and seconds beside it
+        age_message = (
+            f"🎂 You are **{years} years, {months} months, {weeks} weeks, "
+            f"{days} days, {hours} hours, {minutes} minutes, and {seconds} seconds** old!"
+        )
+        st.success(age_message)
 
-with col1:
-    st.subheader("Your Age Breakdown:")
-    if st.button("Calculate Age"):
-        if dob_input:
-            years, months, weeks, days, hours, minutes, seconds = calculate_age(dob_input)
-            st.success(f"🎂 You are **{years} years, {months} months, {weeks} weeks, {days} days, "
-                       f"{hours} hours, {minutes} minutes, and {seconds} seconds** old!")
+        # Trigger balloons effect
+        st.balloons()
 
-            birthday_days = birthday_weekdays_by_year(dob_input)
-            st.subheader("Weekday of Your Birthday Each Year:")
+        # Prepare the birthday occurrence message
+        st.caption("Occurrences of Your Birthday by Day of the Week")
+        occurrence_message = "🗓️ Your birthday has occurred on "
+        for day, count in birthday_counts.items():
+            occurrence_message += f"{count} {day}s, "
+        
+        # Remove the trailing comma and space
+        occurrence_message = occurrence_message[:-2] + " since your birth!"
+        
+        # Display the birthday occurrence message
+        st.write(occurrence_message)
+        
+        # Prepare data for bar chart and change order of days
+        occurrences_df = pd.DataFrame(list(birthday_counts.items()), columns=['Day', 'Count'])
+        
+        # Specify the desired order of the days
+        days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        # Reorder the DataFrame based on the custom day order
+        occurrences_df['Day'] = pd.Categorical(occurrences_df['Day'], categories=days_order, ordered=True)
+        occurrences_df = occurrences_df.sort_values('Day')
+        
+        # Displaying the bar chart using Streamlit's st.bar_chart
+        st.bar_chart(occurrences_df.set_index('Day')['Count'])
+        # st.markdown("### 👑 Live your life with no excuses, travel with no regret, and age with no fear!๋࣭ ⭑⚝")
+        st.markdown("### ── .✦ Live your life with no excuses, travel with no regret, and age with no fear! ── .✦")
+        # Live tracking for current time and elapsed time
+        live_counter = st.empty()  # Create a placeholder for live tracking
 
-            # Displaying birthdays side-by-side, 5 years per row
-            for i in range(0, len(birthday_days), 5):
-                cols = st.columns(5)  # Create 5 columns
-                for j, (year, weekday) in enumerate(birthday_days[i:i+5]):
-                    cols[j].write(f"**{year}:** {weekday}")
+        while True:
+            now = datetime.now()
+            # Calculate the total hours, minutes, and seconds since the birth date
+            total_seconds_since_birth = (now - datetime.combine(dob_input, datetime.min.time())).total_seconds()
+            hours = int(total_seconds_since_birth // 3600)
+            minutes = int((total_seconds_since_birth % 3600) // 60)  # Calculate minutes
+            seconds = int(total_seconds_since_birth % 60)
+            current_time = now.strftime("%H:%M:%S")  # Get current time in HH:MM:SS format
+            
+            # Update the placeholder with current time and elapsed time
+            
+            
+            # Sleep for 1 second to update every second
+            time.sleep(1)
 
-            st.balloons()  # Celebrate with balloons
-        else:
-            st.error("Please enter your date of birth to calculate your age.")
+    else:
+        st.error("Please select your date of birth to calculate your age.")
+    
+# Additional message
 
-with col2:
-    st.image("https://source.unsplash.com/400x400/?birthday", caption="Celebrate your Age!", use_column_width=True)
-
-# Additional message and visualization
-st.markdown("---")
 st.markdown("### 🥳 Celebrate your life! Remember, age is just a number. Keep shining bright!")
-st.markdown("Here's a quick reminder to enjoy every moment of your life!")
-
-# Example visualization
-st.subheader("Fun Age Facts:")
-age_facts = [
-    "You share your birthday with approximately 20,000 people worldwide!",
-    "Your age is just a number, but the experiences you gather are priceless!",
-    "Every year brings new opportunities and adventures. Embrace them!"
-]
-for fact in age_facts:
-    st.markdown(f"- {fact}")
-
-# Inspirational Quote
 st.markdown("---")
-st.markdown("### ✨ Inspirational Quote:")
-st.markdown("**'Count your age by friends, not years. Count your life by smiles, not tears.' - John Lennon**")
 
-# Footer
-st.markdown("---")
