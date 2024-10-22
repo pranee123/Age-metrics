@@ -1,5 +1,4 @@
-
-![age_calci](https://github.com/user-attachments/assets/71e201de-1e06-412e-96b6-e05e473659c5)
+![Screenshot 2024-10-22 155654](https://github.com/user-attachments/assets/88682612-f390-4e80-b9b6-924377072789)
 
 # Age Calculator Project
 
