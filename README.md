@@ -1,3 +1,6 @@
+
+![age_calci](https://github.com/user-attachments/assets/71e201de-1e06-412e-96b6-e05e473659c5)
+
 # Age Calculator Project
 
 This project is a web application built using Streamlit that calculates your age based on the date of birth you input. It displays your age in years, months, weeks, days, hours, minutes, and seconds, along with a bar chart showing the occurrences of your birthday by day of the week. The application also features live tracking of elapsed time since birth and motivational quotes celebrating life.
