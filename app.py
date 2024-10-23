@@ -41,7 +41,12 @@ st.set_page_config(page_title="Age Calculator", layout="wide")
 st.title("🎉 Age Calculator 🎉")
 
 # User input for DOB using a calendar date input
-dob_input = st.date_input("Select your Date of Birth:", value=datetime.today(), min_value=datetime(1900, 1, 1))
+dob_input = st.date_input(
+    "Select your Date of Birth:", 
+    value=datetime.today(), 
+    min_value=datetime(1900, 1, 1), 
+    max_value=datetime.today()  # Restrict selection to today or earlier
+)
 
 # Layout for the age calculation
 if st.button("Calculate Age"):
